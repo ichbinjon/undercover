@@ -4,26 +4,67 @@ import { Input } from './input';
 import { Card, CardHeader, CardContent } from './card';
 import { wordPairs } from './wordPairs'; // Import wordPairs
 
-const shufflePlayers = (players) => {
+// Add types at the top
+interface Player {
+  name: string;
+  role?: 'civilian' | 'undercover' | 'Mr. White';
+  word?: string;
+  isAlive?: boolean;
+}
+
+type GameState = 'setup' | 'reveal' | 'play' | 'vote' | 'end';
+type Winner = 'civilians' | 'undercover' | 'Mr. White' | null;
+type WordPair = [string, string];
+
+const getRoleDistribution = (playerCount: number): { civilians: number; undercover: number; mrWhite: number } => {
+  let mrWhite = 0;
+  let undercover = 1; // Default to 1 undercover
+  
+  if (playerCount > 4) {
+    mrWhite = 1;
+  }
+  
+  if (playerCount >= 7 && playerCount <= 9) {
+    undercover = 2;
+  } else if (playerCount >= 10) {
+    undercover = 3;
+  }
+  
+  const civilians = playerCount - undercover - mrWhite;
+  
+  return {
+    civilians,
+    undercover,
+    mrWhite
+  };
+};
+
+const shufflePlayers = (players: Player[]): Player[] => {
   const startIndex = Math.floor(Math.random() * players.length);
   return [...players.slice(startIndex), ...players.slice(0, startIndex)];
 };
 
 const UndercoverGame = () => {
-  const [players, setPlayers] = useState([]);
-  const [initialPlayers, setInitialPlayers] = useState([]); // New state for initial players
-  const [gameState, setGameState] = useState('setup'); // setup, reveal, play, vote, end
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [initialPlayers, setInitialPlayers] = useState<Player[]>([]);
+  const [gameState, setGameState] = useState<GameState>('setup');
   const [currentPlayer, setCurrentPlayer] = useState(0);
-  const [winner, setWinner] = useState(null);
+  const [winner, setWinner] = useState<Winner>(null);
   const [words, setWords] = useState({ civilian: '', undercover: '' });
   const [showWord, setShowWord] = useState(false);
   const [round, setRound] = useState(1);
+  const [playedWords, setPlayedWords] = useState<WordPair[]>([]);
 
   useEffect(() => {
-    const savedPlayers = JSON.parse(localStorage.getItem('players'));
+    const savedPlayers = localStorage.getItem('players');
+    const savedPlayedWords = localStorage.getItem('playedWords');
     if (savedPlayers) {
-      setPlayers(savedPlayers);
-      setInitialPlayers(savedPlayers); // Load initial players
+      const parsedPlayers = JSON.parse(savedPlayers) as Player[];
+      setPlayers(parsedPlayers);
+      setInitialPlayers(parsedPlayers);
+    }
+    if (savedPlayedWords) {
+      setPlayedWords(JSON.parse(savedPlayedWords) as WordPair[]);
     }
   }, []);
 
@@ -33,25 +74,49 @@ const UndercoverGame = () => {
       return;
     }
 
-    setInitialPlayers(players); // Save the initial list of players
+    setInitialPlayers(players);
 
-    const randomPair = wordPairs[Math.floor(Math.random() * wordPairs.length)];
-    setWords({ civilian: randomPair[0], undercover: randomPair[1] });
+    // Filter out already played word pairs
+    const availableWordPairs = (wordPairs as WordPair[]).filter((pair) => 
+      !playedWords.some((playedPair) => 
+        playedPair[0] === pair[0] && playedPair[1] === pair[1]
+      )
+    );
 
-    const undercoverIndex = Math.floor(Math.random() * players.length);
-    let mrWhiteIndex = -1;
-
-    if (players.length > 3) {
-      do {
-        mrWhiteIndex = Math.floor(Math.random() * players.length);
-      } while (mrWhiteIndex === undercoverIndex);
+    if (availableWordPairs.length === 0) {
+      alert('All word pairs have been used! Resetting played words.');
+      setPlayedWords([]);
+      localStorage.removeItem('playedWords');
+      return;
     }
 
-    const newPlayers = players.map((player, index) => {
-      let role = 'civilian';
+    const randomPair = availableWordPairs[Math.floor(Math.random() * availableWordPairs.length)];
+    setWords({ civilian: randomPair[0], undercover: randomPair[1] });
+
+    // Add the word pair to played words
+    const newPlayedWords = [...playedWords, randomPair];
+    setPlayedWords(newPlayedWords);
+    localStorage.setItem('playedWords', JSON.stringify(newPlayedWords));
+
+    // Get role distribution
+    const distribution = getRoleDistribution(players.length);
+    
+    // Create array of indices and shuffle it
+    const indices = Array.from({ length: players.length }, (_, i) => i);
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+    
+    // Assign roles based on shuffled indices
+    const undercoverIndices = indices.slice(0, distribution.undercover);
+    const mrWhiteIndex = distribution.mrWhite ? indices[distribution.undercover] : -1;
+
+    const newPlayers: Player[] = players.map((player, index) => {
+      let role: Player['role'] = 'civilian';
       let word = randomPair[0];
 
-      if (index === undercoverIndex) {
+      if (undercoverIndices.includes(index)) {
         role = 'undercover';
         word = randomPair[1];
       } else if (index === mrWhiteIndex) {
@@ -67,7 +132,7 @@ const UndercoverGame = () => {
       };
     });
 
-    const shuffledPlayers = shufflePlayers(newPlayers); // Shuffle players
+    const shuffledPlayers = shufflePlayers(newPlayers);
 
     setPlayers(shuffledPlayers);
     setGameState('reveal');
@@ -89,42 +154,58 @@ const UndercoverGame = () => {
     }
   };
 
-  const handleEliminate = (selectedPlayer) => {
+  const handleEliminate = (selectedPlayer: Player) => {
     const newPlayers = players.map((player) => ({
       ...player,
       isAlive: player.isAlive && selectedPlayer.name !== player.name
     }));
 
     setPlayers(newPlayers);
-
-    // Show the eliminated player's role
     alert(`${selectedPlayer.name}'s role was: ${selectedPlayer.role}.`);
 
-    // Check win condition
     const alivePlayers = newPlayers.filter(p => p.isAlive);
     const aliveUndercover = alivePlayers.find(p => p.role === 'undercover');
     const aliveMrWhite = alivePlayers.find(p => p.role === 'Mr. White');
+    const aliveCivilians = alivePlayers.filter(p => p.role === 'civilian');
 
-    if (!aliveUndercover && !aliveMrWhite) {
+    // Win condition checks
+    if (alivePlayers.length <= 2) {
+      // Mr. White wins if they're alive with only one other player
+      if (aliveMrWhite && alivePlayers.length === 2) {
+        setWinner('Mr. White');
+        setGameState('end');
+      }
+      // Undercover wins if they're alive with only one other player
+      else if (aliveUndercover && alivePlayers.length === 2) {
+        setWinner('undercover');
+        setGameState('end');
+      }
+      // Civilians win if no special roles are alive
+      else if (!aliveUndercover && !aliveMrWhite) {
+        setWinner('civilians');
+        setGameState('end');
+      }
+      // Game continues if more than one civilian is alive
+      else if (aliveCivilians.length > 1) {
+        setGameState('play');
+        setCurrentPlayer(0);
+        setRound(prev => prev + 1);
+      }
+    }
+    // Civilians win if all special roles are eliminated
+    else if (!aliveUndercover && !aliveMrWhite) {
       setWinner('civilians');
       setGameState('end');
-      setPlayers(players);
-    } else if (alivePlayers.length <= 2) {
-      if (aliveMrWhite) {
-        setWinner('Mr. White');
-      } else {
-        setWinner('undercover');
-      }
-      setGameState('end');
-      setPlayers(players);
-    } else {
+    }
+    // Game continues
+    else {
       setGameState('play');
       setCurrentPlayer(0);
       setRound(prev => prev + 1);
     }
   };
 
-  const addPlayer = (name) => {
+  const addPlayer = (name: string) => {
     if (name && !players.find(p => p.name === name)) {
       const newPlayers = [...players, { name }];
       setPlayers(newPlayers);
@@ -134,13 +215,27 @@ const UndercoverGame = () => {
   };
 
   const resetGame = () => {
-    setPlayers(initialPlayers); // Reset to initial players
+    // Reset to initial players but clear their game state
+    const resetPlayers = initialPlayers.map(player => ({
+      name: player.name,
+      // Remove role, word, and isAlive status
+      role: undefined,
+      word: undefined,
+      isAlive: undefined
+    }));
+    
+    setPlayers(resetPlayers);
     setGameState('setup');
     setCurrentPlayer(0);
     setWinner(null);
     setWords({ civilian: '', undercover: '' });
     setShowWord(false);
     setRound(1);
+  };
+
+  const resetSession = () => {
+    setPlayedWords([]);
+    localStorage.removeItem('playedWords');
   };
 
   return (
@@ -152,23 +247,37 @@ const UndercoverGame = () => {
         <CardContent className="p-4">
           {gameState === 'setup' && (
             <div>
-              <h2 className="text-xl mb-2 text-gray-700">Add Players</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl text-gray-700">Add Players</h2>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600 mb-2">Words played this session: {playedWords.length}</p>
+                  <Button 
+                    onClick={resetSession} 
+                    className="bg-orange-500 hover:bg-orange-600 text-white text-sm"
+                  >
+                    Reset Session
+                  </Button>
+                </div>
+              </div>
               <div className="flex mb-2">
                 <Input
                   type="text"
                   placeholder="Player name"
-                  onKeyPress={(e) => {
+                  onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => {
                     if (e.key === 'Enter') {
-                      addPlayer(e.target.value);
-                      e.target.value = '';
+                      const target = e.target as HTMLInputElement;
+                      addPlayer(target.value);
+                      target.value = '';
                     }
                   }}
                   className="mr-2 text-black"
                 />
                 <Button onClick={() => {
-                  const input = document.querySelector('input');
-                  addPlayer(input.value);
-                  input.value = '';
+                  const input = document.querySelector('input') as HTMLInputElement;
+                  if (input) {
+                    addPlayer(input.value);
+                    input.value = '';
+                  }
                 }} className="bg-green-500 hover:bg-green-600 text-white">Add</Button>
               </div>
               <ul className="mb-4 text-gray-600">
@@ -180,10 +289,42 @@ const UndercoverGame = () => {
                       setPlayers(newPlayers);
                       setInitialPlayers(newPlayers);
                       localStorage.setItem('players', JSON.stringify(newPlayers));
+                      
+                      // Reset session if all players are removed
+                      if (newPlayers.length === 0) {
+                        resetSession();
+                      }
                     }} className="bg-red-500 hover:bg-red-600 text-white ml-2 p-1 text-xs">X</Button>
                   </li>
                 ))}
               </ul>
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">Role Distribution</h3>
+                {players.length >= 3 ? (
+                  <div className="space-y-1">
+                    {(() => {
+                      const distribution = getRoleDistribution(players.length);
+                      return (
+                        <>
+                          <p className="text-gray-600">
+                            <span className="font-medium">Civilians:</span> {distribution.civilians}
+                          </p>
+                          <p className="text-gray-600">
+                            <span className="font-medium">Undercover:</span> {distribution.undercover}
+                          </p>
+                          {players.length >= 5 && (
+                            <p className="text-gray-600">
+                              <span className="font-medium">Mr. White:</span> {distribution.mrWhite}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Add at least 3 players to see role distribution</p>
+                )}
+              </div>
               <Button onClick={startGame} className="bg-blue-500 hover:bg-blue-600 text-white">Start Game</Button>
             </div>
           )}
@@ -195,7 +336,11 @@ const UndercoverGame = () => {
                 <Button onClick={handleRevealWord} className="bg-yellow-500 hover:bg-yellow-600 text-white">Reveal Word</Button>
               ) : (
                 <div>
-                  <p className="text-xl font-bold mb-4 text-gray-800">Your word is: {players[currentPlayer].word}</p>
+                  <p className="text-xl font-bold mb-4 text-gray-800">
+                    {players[currentPlayer].role === 'Mr. White' 
+                      ? "You are Mr. White. You do not have a word."
+                      : `Your word is: ${players[currentPlayer].word}`}
+                  </p>
                   <Button onClick={handleHideWord} className="bg-red-500 hover:bg-red-600 text-white">Hide Word</Button>
                 </div>
               )}
@@ -241,10 +386,16 @@ const UndercoverGame = () => {
               <p className="text-gray-600">The words were:</p>
               <p className="text-gray-800">Civilian: {words.civilian}</p>
               <p className="text-gray-800">Undercover: {words.undercover}</p>
-              <p className="text-gray-600">The undercover player was:</p>
-              <p className="text-gray-800 font-bold">{players.find(player => player.role === 'undercover').name}</p>
-              <p className="text-gray-600">The Mr White player was:</p>
-              <p className="text-gray-800 font-bold">{players.find(player => player.role === 'Mr. White').name}</p>
+              <p className="text-gray-600">The undercover players were:</p>
+              {players.filter(player => player.role === 'undercover').map((player, index) => (
+                <p key={index} className="text-gray-800 font-bold">{player.name}</p>
+              ))}
+              {players.some(player => player.role === 'Mr. White') && (
+                <>
+                  <p className="text-gray-600">The Mr White player was:</p>
+                  <p className="text-gray-800 font-bold">{players.find(player => player.role === 'Mr. White')?.name}</p>
+                </>
+              )}
               <Button onClick={resetGame} className="mt-4 bg-purple-500 hover:bg-purple-600 text-white">Play Again</Button>
             </div>
           )}

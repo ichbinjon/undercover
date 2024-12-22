@@ -194,4 +194,136 @@ export const wordPairs = [
   ['WhatsApp', 'Telegram'],
   ['Airbnb', 'Booking.com'],
   ['Uber', 'Lyft'],
+  // Emotions
+  ['Happy', 'Cheerful'],
+  ['Sad', 'Gloomy'],
+  ['Angry', 'Furious'],
+  ['Scared', 'Frightened'],
+  ['Tired', 'Exhausted'],
+  ['Excited', 'Thrilled'],
+  ['Nervous', 'Anxious'],
+  ['Calm', 'Peaceful'],
+  
+  // Weather
+  ['Rainy', 'Drizzly'],
+  ['Sunny', 'Bright'],
+  ['Cloudy', 'Overcast'],
+  ['Stormy', 'Tempestuous'],
+  ['Windy', 'Breezy'],
+  ['Foggy', 'Misty'],
+  ['Humid', 'Muggy'],
+  ['Chilly', 'Cold'],
+  
+  // Sports Equipment
+  ['Racket', 'Paddle'],
+  ['Cleats', 'Spikes'],
+  ['Helmet', 'Headgear'],
+  ['Bat', 'Club'],
+  ['Goal', 'Net'],
+  ['Jersey', 'Uniform'],
+  
+  // Musical Terms
+  ['Melody', 'Tune'],
+  ['Rhythm', 'Beat'],
+  ['Symphony', 'Orchestra'],
+  ['Song', 'Ballad'],
+  ['Concert', 'Recital'],
+  ['Band', 'Group'],
+  
+  // School Items
+  ['Notebook', 'Journal'],
+  ['Backpack', 'Rucksack'],
+  ['Marker', 'Highlighter'],
+  ['Ruler', 'Measuring Stick'],
+  ['Calculator', 'Computer'],
+  
+  // Job Titles
+  ['Teacher', 'Instructor'],
+  ['Doctor', 'Physician'],
+  ['Chef', 'Cook'],
+  ['Writer', 'Author'],
+  ['Artist', 'Painter'],
+  ['Manager', 'Supervisor'],
+  
+  // Home Spaces
+  ['Kitchen', 'Dining Room'],
+  ['Bedroom', 'Chamber'],
+  ['Bathroom', 'Restroom'],
+  ['Garage', 'Carport'],
+  ['Garden', 'Yard'],
+  ['Basement', 'Cellar'],
+  
+  // Time Periods
+  ['Morning', 'Dawn'],
+  ['Evening', 'Dusk'],
+  ['Night', 'Midnight'],
+  ['Spring', 'Summer'],
+  ['Autumn', 'Fall'],
+  ['Past', 'History'],
+  
+  // Textures
+  ['Smooth', 'Sleek'],
+  ['Rough', 'Coarse'],
+  ['Soft', 'Fluffy'],
+  ['Hard', 'Solid'],
+  ['Sticky', 'Gooey'],
+  ['Slippery', 'Slick'],
+  
+  // Colors
+  ['Crimson', 'Scarlet'],
+  ['Azure', 'Cerulean'],
+  ['Emerald', 'Jade'],
+  ['Purple', 'Violet'],
+  ['Golden', 'Yellow'],
+  ['Silver', 'Gray'],
+  
+  
+  // Space Related
+  ['Galaxy', 'Universe'],
+  ['Planet', 'Star'],
+  ['Comet', 'Asteroid'],
+  ['Meteor', 'Satellite'],
+  ['Rocket', 'Shuttle'],
+  
+  // Medical Terms
+  ['Vaccine', 'Medicine'],
+  ['Surgery', 'Operation'],
+  ['Symptom', 'Diagnosis'],
+  ['Patient', 'Doctor'],
+  ['Clinic', 'Hospital'],
+  
+  // Ocean Life
+  ['Coral', 'Reef'],
+  ['Octopus', 'Squid'],
+  ['Seahorse', 'Starfish'],
+  ['Jellyfish', 'Anemone'],
+  ['Lobster', 'Crab'],
+  
+  // Art Supplies
+  ['Canvas', 'Palette'],
+  ['Brush', 'Easel'],
+  ['Crayon', 'Pastel'],
+  ['Sketch', 'Drawing'],
+  ['Paint', 'Ink'],
+  
+  // Fantasy
+  ['Dragon', 'Phoenix'],
+  ['Wizard', 'Sorcerer'],
+  ['Knight', 'Paladin'],
+  ['Castle', 'Palace'],
+  ['Magic', 'Spell'],
+  
+  // Science
+  ['Atom', 'Molecule'],
+  ['Theory', 'Hypothesis'],
+  ['Element', 'Compound'],
+  ['Energy', 'Force'],
+  ['Matter', 'Mass'],
+  
+  // Architecture
+  ['Bridge', 'Tunnel'],
+  ['Tower', 'Skyscraper'],
+  ['Temple', 'Cathedral'],
+  ['Mansion', 'Villa'],
+  ['Cottage', 'Cabin']
 ];
